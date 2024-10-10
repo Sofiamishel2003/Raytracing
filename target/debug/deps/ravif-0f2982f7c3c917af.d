@@ -1,0 +1,10 @@
+C:\Users\50250\Desktop\Sofía Mishell Velásquez UVG\Tercer Año 2024\Segundo Semestre\Graficas\Raytracing\target\debug\deps\libravif-0f2982f7c3c917af.rmeta: C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src/lib.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\av1encoder.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\error.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\dirtyalpha.rs
+
+C:\Users\50250\Desktop\Sofía Mishell Velásquez UVG\Tercer Año 2024\Segundo Semestre\Graficas\Raytracing\target\debug\deps\libravif-0f2982f7c3c917af.rlib: C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src/lib.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\av1encoder.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\error.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\dirtyalpha.rs
+
+C:\Users\50250\Desktop\Sofía Mishell Velásquez UVG\Tercer Año 2024\Segundo Semestre\Graficas\Raytracing\target\debug\deps\ravif-0f2982f7c3c917af.d: C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src/lib.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\av1encoder.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\error.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\dirtyalpha.rs
+
+C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src/lib.rs:
+C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\av1encoder.rs:
+C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\error.rs:
+C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\ravif-0.11.10\src\dirtyalpha.rs:

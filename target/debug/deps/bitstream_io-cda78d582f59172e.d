@@ -1,0 +1,10 @@
+C:\Users\50250\Desktop\Sofía Mishell Velásquez UVG\Tercer Año 2024\Segundo Semestre\Graficas\Raytracing\target\debug\deps\libbitstream_io-cda78d582f59172e.rmeta: C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src/lib.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\huffman.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\read.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\write.rs
+
+C:\Users\50250\Desktop\Sofía Mishell Velásquez UVG\Tercer Año 2024\Segundo Semestre\Graficas\Raytracing\target\debug\deps\libbitstream_io-cda78d582f59172e.rlib: C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src/lib.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\huffman.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\read.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\write.rs
+
+C:\Users\50250\Desktop\Sofía Mishell Velásquez UVG\Tercer Año 2024\Segundo Semestre\Graficas\Raytracing\target\debug\deps\bitstream_io-cda78d582f59172e.d: C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src/lib.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\huffman.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\read.rs C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\write.rs
+
+C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src/lib.rs:
+C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\huffman.rs:
+C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\read.rs:
+C:\Users\50250\.cargo\registry\src\index.crates.io-6f17d22bba15001f\bitstream-io-2.5.3\src\write.rs:
