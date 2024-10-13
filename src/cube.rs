@@ -1,67 +1,120 @@
-use crate::ray_intersect::RayIntersect;
 use nalgebra_glm::Vec3;
-use crate::material::Material;
+use crate::Material;
+use crate::ray_intersect::{RayIntersect, Intersect};
+
 
 pub struct Cube {
-    pub min: Vec3,
-    pub max: Vec3,
-    pub material: Material,
+    pub min: Vec3, // Esquina inferior 
+    pub max: Vec3, // Esquina superior
+    pub material: Material, // Material del cubo 
 }
 
 impl Cube {
-    pub fn new(min: Vec3, max: Vec3, material: Material) -> Self {
-        Cube { min, max, material }
-    }
-
-    pub fn intersect(&self, origin: &Vec3, direction: &Vec3) -> Option<Intersect> {
-        let inv_dir = 1.0 / direction;
-        let t0 = (self.min - origin).component_mul(&inv_dir);
-        let t1 = (self.max - origin).component_mul(&inv_dir);
-        
-        let tmin = t0.min(&t1).max();
-        let tmax = t0.max(&t1).min();
-        
-        if tmax >= tmin && tmax >= 0.0 {
-            Some(Intersect {
-                point: origin + direction * tmin,
-                normal: self.get_normal(tmin, tmax),
-                distance: tmin,
-                material: self.material.clone(),
-                is_intersecting: true,
-                ..Default::default() // Asegúrate de tener un `default` para campos faltantes si es necesario.
-            })
-        } else {
-            None
+    fn calculate_normal(&self, hit_point: Vec3) -> Vec3 {
+        if (hit_point.x - self.min.x).abs() < 1e-4 {
+            return Vec3::new(-1.0, 0.0, 0.0);
         }
+        if (hit_point.x - self.max.x).abs() < 1e-4 {
+            return Vec3::new(1.0, 0.0, 0.0);
+        }
+        if (hit_point.y - self.min.y).abs() < 1e-4 {
+            return Vec3::new(0.0, -1.0, 0.0);
+        }
+        if (hit_point.y - self.max.y).abs() < 1e-4 {
+            return Vec3::new(0.0, 1.0, 0.0);
+        }
+        if (hit_point.z - self.min.z).abs() < 1e-4 {
+            return Vec3::new(0.0, 0.0, -1.0);
+        }
+        Vec3::new(0.0, 0.0, 1.0)
     }
 
-    fn get_normal(&self, tmin: f32, tmax: f32) -> Vec3 {
-        // Lógica para obtener la normal adecuada dependiendo del tmin/tmax y la cara del cubo que se intersecta
-        Vec3::new(0.0, 1.0, 0.0) // Aquí podrías calcular la normal real del cubo.
+    fn get_uv(&self, point: Vec3) -> (f32, f32) {
+        if (point.y - self.max.y).abs() < 1e-4 {
+            let u = (point.x - self.min.x) / (self.max.x - self.min.x);
+            let v = (point.z - self.min.z) / (self.max.z - self.min.z);
+            (u, v)
+        } else if (point.y - self.min.y).abs() < 1e-4 {
+            let u = (point.x - self.min.x) / (self.max.x - self.min.x);
+            let v = (point.z - self.min.z) / (self.max.z - self.min.z);
+            (u, v)
+        } else if (point.x - self.min.x).abs() < 1e-4 {
+            let u = (point.z - self.min.z) / (self.max.z - self.min.z);
+            let v = (point.y - self.min.y) / (self.max.y - self.min.y);
+            (u, v)
+        } else if (point.x - self.max.x).abs() < 1e-4 {
+            let u = (point.z - self.min.z) / (self.max.z - self.min.z);
+            let v = (point.y - self.min.y) / (self.max.y - self.min.y);
+            (u, v)
+        } else if (point.z - self.min.z).abs() < 1e-4 {
+            let u = (point.x - self.min.x) / (self.max.x - self.min.x);
+            let v = (point.y - self.min.y) / (self.max.y - self.min.y);
+            (u, v)
+        } else {
+            let u = (point.x - self.min.x) / (self.max.x - self.min.x);
+            let v = (point.y - self.min.y) / (self.max.y - self.min.y);
+            (u, v)
+        }
+    }       
+
+    pub fn position(&self) -> Vec3 {
+        (self.min + self.max) / 2.0
     }
+    
 }
 
 impl RayIntersect for Cube {
-    fn intersect(&self, origin: &Vec3, direction: &Vec3) -> Option<Intersect> {
-        // Implementación de la lógica de intersección de rayos
-        let inv_dir = 1.0 / direction;
-        let t0 = (self.min - origin).component_mul(&inv_dir);
-        let t1 = (self.max - origin).component_mul(&inv_dir);
+    fn ray_intersect(&self, ray_origin: &Vec3, ray_dir: &Vec3) -> Intersect {
+        let mut tmin = (self.min.x - ray_origin.x) / ray_dir.x;
+        let mut tmax = (self.max.x - ray_origin.x) / ray_dir.x;
 
-        let tmin = t0.min(&t1).max();
-        let tmax = t0.max(&t1).min();
+        if tmin > tmax {
+            std::mem::swap(&mut tmin, &mut tmax);
+        }
 
-        if tmax >= tmin && tmax >= 0.0 {
-            Some(Intersect {
-                point: origin + direction * tmin,
-                normal: self.get_normal(tmin, tmax),
-                distance: tmin,
-                material: self.material.clone(),
-                is_intersecting: true,
-                ..Default::default()
-            })
-        } else {
-            None
+        let mut tymin = (self.min.y - ray_origin.y) / ray_dir.y;
+        let mut tymax = (self.max.y - ray_origin.y) / ray_dir.y;
+
+        if tymin > tymax {
+            std::mem::swap(&mut tymin, &mut tymax);
+        }
+
+        if tmin > tymax || tymin > tmax {
+            return Intersect::empty();
+        }
+
+        tmin = tmin.max(tymin);
+        tmax = tmax.min(tymax);
+
+        let mut tzmin = (self.min.z - ray_origin.z) / ray_dir.z;
+        let mut tzmax = (self.max.z - ray_origin.z) / ray_dir.z;
+
+        if tzmin > tzmax {
+            std::mem::swap(&mut tzmin, &mut tzmax);
+        }
+
+        if tmin > tzmax || tzmin > tmax {
+            return Intersect::empty();
+        }
+
+        tmin = tmin.max(tzmin);
+        tmax = tmax.min(tzmax);
+
+        if tmin < 0.0 && tmax < 0.0 {
+            return Intersect::empty();
+        }
+
+        let intersection_point = ray_origin + ray_dir * tmin;
+
+        let (u, v) = self.get_uv(intersection_point);
+        Intersect {
+            point: intersection_point,
+            distance: tmin,
+            normal: self.calculate_normal(intersection_point),
+            material: self.material.clone(),
+            is_intersecting: true,
+            u: u,  // Asigna el valor de u 
+            v: v,  // Asigna el valor de v 
         }
     }
 }

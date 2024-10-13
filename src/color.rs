@@ -1,73 +1,52 @@
-use std::ops::{Add, Mul};
+use std::fmt;
+use std::ops::Mul;
+use std::ops::Add;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
+    r: u8,
+    g: u8,
+    b: u8,
 }
 
 impl Color {
-    pub fn new(r: i32, g: i32, b: i32) -> Color {
-        Color {
-            r: Color::clamp(r),
-            g: Color::clamp(g),
-            b: Color::clamp(b),
-        }
+    pub const fn new(r: u8, g: u8, b: u8) -> Self {
+        Color { r, g, b }
     }
-
-    pub fn from_hex(hex: u32) -> Color {
+    pub const fn from_hex(hex: u32) -> Self {
         let r = ((hex >> 16) & 0xFF) as u8;
         let g = ((hex >> 8) & 0xFF) as u8;
         let b = (hex & 0xFF) as u8;
-        Color::new(r as i32, g as i32, b as i32) 
+        Color { r, g, b }
+    }
+    pub const fn black() -> Self {
+        Color { r: 0, g: 0, b: 0 }
+    }
+    pub const fn to_hex(&self) -> u32 {
+        ((self.r as u32) << 16) | ((self.g as u32) << 8) | (self.b as u32)
+    }
+    pub fn r(&self) -> u8 {
+        self.r
     }
 
-    fn clamp(value: i32) -> u8 {
-        if value < 0 {
-            0
-        } else if value > 255 {
-            255
-        } else {
-            value as u8
-        }
+    pub fn g(&self) -> u8 {
+        self.g
     }
 
-    pub fn add(&self, other: &Color) -> Color {
-        Color {
-            r: Color::clamp(self.r as i32 + other.r as i32),
-            g: Color::clamp(self.g as i32 + other.g as i32),
-            b: Color::clamp(self.b as i32 + other.b as i32),
-        }
+    pub fn b(&self) -> u8 {
+        self.b
     }
-
-    // Multiplicar un color por un número
-    pub fn multiply(&self, scalar: f32) -> Color {
-        Color {
-            r: Color::clamp((self.r as f32 * scalar) as i32),
-            g: Color::clamp((self.g as f32 * scalar) as i32),
-            b: Color::clamp((self.b as f32 * scalar) as i32),
-        }
-    }
-
-    pub const fn black() -> Self{
-        Color {r: 0, g: 0, b: 0}
-    }
-
-    pub fn to_u32(&self) -> u32 {
-        let r = (self.r as u32) << 16;  
-        let g = (self.g as u32) << 8;   
-        let b = self.b as u32;         
-
-        r | g | b
-    }
-    
 }
 
-use std::fmt;
-impl fmt::Display for Color {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Color(r: {}, g: {}, b: {})", self.r, self.g, self.b)
+impl Add for Color {
+    type Output = Color;
+
+    fn add(self, other: Color) -> Color {
+        Color {
+            r: self.r.saturating_add(other.r),
+            g: self.g.saturating_add(other.g),
+            b: self.b.saturating_add(other.b),
+        }
     }
 }
 
@@ -77,21 +56,15 @@ impl Mul<f32> for Color {
 
     fn mul(self, scalar: f32) -> Color {
         Color {
-            r: Color::clamp((self.r as f32 * scalar) as i32),
-            g: Color::clamp((self.g as f32 * scalar) as i32),
-            b: Color::clamp((self.b as f32 * scalar) as i32),
+            r: (self.r as f32 * scalar).clamp(0.0, 255.0) as u8,
+            g: (self.g as f32 * scalar).clamp(0.0, 255.0) as u8,
+            b: (self.b as f32 * scalar).clamp(0.0, 255.0) as u8,
         }
     }
 }
 
-impl Add for Color {
-    type Output = Color;
-
-    fn add(self, other: Color) -> Color {
-        Color {
-            r: Color::clamp(self.r as i32 + other.r as i32),
-            g: Color::clamp(self.g as i32 + other.g as i32),
-            b: Color::clamp(self.b as i32 + other.b as i32),
-        }
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Color(r: {}, g: {}, b: {})", self.r, self.g, self.b)
     }
 }

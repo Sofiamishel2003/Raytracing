@@ -1,152 +1,231 @@
-use nalgebra_glm::{Vec3};
-use std::sync::Arc;
+use core::f32;
 use minifb::{Key, Window, WindowOptions};
-use crate::camera::Camera;
-use crate::color::Color;
-use crate::framebuffer::Framebuffer;
-use crate::light::Light;
-use crate::cube::Cube;
-use crate::material::Material;
-use crate::texture::Texture;
-use crate::ray_intersect::Intersect;
+use nalgebra_glm::Vec3;
+use std::time::Duration;
+use std::f32::consts::PI;
+use std::f32::INFINITY;
+
+mod framebuffer;
+use framebuffer::Framebuffer;
+
+mod cube;
+use cube::Cube;
+
+mod ray_intersect;
+use ray_intersect::{Intersect, RayIntersect};
+
+mod color;
+use color::Color;
 
 mod camera;
-mod color;
-mod framebuffer;
-mod light;
-mod cube;
+use camera::Camera;
+
 mod material;
+use material::Material;
+
+mod light;
+use light::Light;
+
 mod texture;
-mod ray_intersect;
+use std::sync::Arc;
+use texture::Texture;
 
-const WIDTH: usize = 800;
-const HEIGHT: usize = 600;
+const BIAS: f32 = 0.001;
+const SKYBOX_COLOR: Color = Color::new(135, 206, 235); // Light sky blue
 
-fn main() {
-    let mut framebuffer = Framebuffer::new(WIDTH, HEIGHT);
-    let mut window = Window::new("Diorama", WIDTH, HEIGHT, WindowOptions::default()).unwrap();
+const AMBIENT_LIGHT_COLOR: Color = Color::new(50, 50, 50);
+const AMBIENT_INTENSITY: f32 = 0.3; 
 
-    let sky_color = Color::new(68, 142, 228);
-
-    // Create textures for cubes
-    let wood_texture = Arc::new(Texture::new("wood.png"));
-    let stone_texture = Arc::new(Texture::new("stone.png"));
-    let glass_texture = Arc::new(Texture::new("glass.png"));
-    let emissive_texture = Arc::new(Texture::new("emissive.png"));
-
-    // Materials
-    let wood_material = Material::new_with_texture(
-        50.0,
-        [0.9, 0.1, 0.0, 0.0],
-        0.0,
-        Some(wood_texture.clone()),
-    );
-    let stone_material = Material::new_with_texture(
-        50.0,
-        [0.9, 0.1, 0.0, 0.0],
-        0.0,
-        Some(stone_texture.clone()),
-    );
-    let glass_material = Material::new_with_texture(
-        50.0,
-        [0.9, 0.1, 0.0, 0.0],
-        0.0,
-        Some(glass_texture.clone()),
-    );
-    let emissive_material = Material::new_with_texture(
-        50.0,
-        [0.9, 0.1, 0.0, 0.0],
-        0.0,
-        Some(emissive_texture.clone()),
-    );
-
-    // Create the cubes for the house structure
-    let house_blocks = vec![
-        Cube::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0), wood_material.clone()),
-        Cube::new(Vec3::new(1.0, -1.0, -1.0), Vec3::new(3.0, 1.0, 1.0), stone_material.clone()),
-        Cube::new(Vec3::new(-1.0, -1.0, 1.0), Vec3::new(1.0, 1.0, 3.0), glass_material.clone()),
-        Cube::new(Vec3::new(1.0, -1.0, 1.0), Vec3::new(3.0, 1.0, 3.0), emissive_material.clone()),
-    ];
-
-    let mut objects = Vec::new();
-    objects.extend(house_blocks);
-
-    // Add a light source
-    let light = Light::new(
-        Vec3::new(5.0, 5.0, 5.0),
-        Color::new(255, 255, 255),
-        1.0,
-    );
-
-    // Create the camera
-    let mut camera = Camera::new(
-        Vec3::new(0.0, 5.0, 10.0),
-        Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(0.0, 1.0, 0.0),
-        60.0,
-    );
-
-    // Main loop
-    while window.is_open() && !window.is_key_down(Key::Escape) {
-        // Clear the framebuffer
-        framebuffer.clear(sky_color);
-
-        // Render the scene
-        render(&mut framebuffer, &objects, &camera, &light, &sky_color);
-
-        // Update camera controls
-        if window.is_key_down(Key::W) {
-            camera.zoom(0.1);
-        }
-        if window.is_key_down(Key::S) {
-            camera.zoom(-0.1);
-        }
-
-        // Display the framebuffer
-        window.update_with_buffer(&framebuffer.buffer, WIDTH, HEIGHT).unwrap();
-    }
+fn offset_point(intersect: &Intersect, direction: &Vec3) -> Vec3 {
+    let offset = intersect.normal * BIAS;
+    intersect.point + offset
 }
 
-fn render(
-    framebuffer: &mut Framebuffer,
-    objects: &[Cube],
-    camera: &Camera,
-    light: &Light,
-    sky_color: &Color,
-) {
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            let direction = camera.pixel_direction(x, y, WIDTH, HEIGHT);
-            let rotated_direction = camera.rotate_direction(&direction);
-
-            let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects, light, 0, sky_color);
-            framebuffer.put_pixel(x, y, pixel_color);
-        }
-    }
+fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
+    incident - 2.0 * incident.dot(normal) * normal
 }
 
-fn cast_ray(
-    origin: &Vec3,
-    direction: &Vec3,
-    objects: &[Cube],
-    light: &Light,
-    depth: u32,
-    sky_color: &Color,
-) -> Color {
-    // Implement ray casting to intersect with objects, compute lighting
-    // and return the computed color for the pixel
-    let mut closest_intersect = Intersect::empty();
-    let mut color = *sky_color;
+fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Cube]) -> f32 {
+    let light_dir = (light.position - intersect.point).normalize();
+    let light_distance = (light.position - intersect.point).magnitude();
+
+    let shadow_ray_origin = offset_point(intersect, &light_dir);
+    let mut shadow_intensity = 0.0;
 
     for object in objects {
-        if let Some(intersect) = object.intersect(origin, direction) {
-            if intersect.distance < closest_intersect.distance {
-                closest_intersect = intersect;
-                let diffuse_color = closest_intersect.material.get_diffuse_color(closest_intersect.u, closest_intersect.v);
-                color = diffuse_color;
-            }
+        let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
+        if shadow_intersect.is_intersecting && shadow_intersect.distance < light_distance {
+            shadow_intensity = 1.0;
+            break;
         }
     }
 
-    color
+    shadow_intensity
+}
+
+fn get_skybox_color(ray_direction: &Vec3, skybox: &Texture) -> Color {
+    let dir = ray_direction.normalize();
+    let u = 0.5 + (dir.x.atan2(dir.z) / (2.0 * PI));
+    let v = 0.5 - (dir.y.asin() / PI);
+    skybox.get_color_at_uv(u, v)
+}
+
+fn clamp_color(color: Color) -> Color {
+    Color::new(
+        color.r().min(255).max(0),
+        color.g().min(255).max(0),
+        color.b().min(255).max(0),
+    )
+}
+
+pub fn cast_ray(
+    ray_origin: &Vec3,
+    ray_direction: &Vec3,
+    objects: &[Cube],
+    lights: &[Light],
+    skybox: &Texture,
+    depth: u32,
+) -> Color {
+    if depth >= 3 {
+        return SKYBOX_COLOR;
+    }
+
+    let mut intersect = Intersect::empty();
+    let mut zbuffer = INFINITY;
+
+    for object in objects {
+        let i = object.ray_intersect(ray_origin, ray_direction);
+        if i.is_intersecting && i.distance < zbuffer {
+            zbuffer = i.distance;
+            intersect = i;
+        }
+    }
+
+    if !intersect.is_intersecting {
+        return get_skybox_color(ray_direction, skybox);
+    }
+
+    let ambient_light = AMBIENT_LIGHT_COLOR * AMBIENT_INTENSITY;
+    let mut total_light = ambient_light;
+
+    for light in lights {
+        let light_dir = (light.position - intersect.point).normalize();
+        let view_dir = (ray_origin - intersect.point).normalize();
+        let reflect_dir = reflect(&-light_dir, &intersect.normal).normalize();
+
+        let shadow_intensity = cast_shadow(&intersect, light, objects);
+        let light_intensity = light.intensity * (1.0 - shadow_intensity);
+
+        let diffuse_intensity = intersect.normal.dot(&light_dir).max(0.0).min(1.0);
+        let diffuse_color = intersect.material.get_diffuse_color(intersect.u, intersect.v);
+        let diffuse = diffuse_color * intersect.material.albedo[0] * diffuse_intensity * light_intensity;
+
+        let specular_intensity = view_dir.dot(&reflect_dir).max(0.0).powf(intersect.material.specular);
+        let specular = light.color * intersect.material.albedo[1] * specular_intensity * light_intensity;
+
+        total_light = total_light + diffuse + specular;
+    }
+
+    total_light = clamp_color(total_light);
+    total_light
+}
+
+pub fn render(framebuffer: &mut Framebuffer, objects: &[Cube], camera: &Camera, lights: &[Light]) {
+    let width = framebuffer.width as f32;
+    let height = framebuffer.height as f32;
+    let aspect_ratio = width / height;
+    let fov = PI / 3.0;
+    let perspective_scale = (fov / 2.0).tan();
+    let skybox_texture = Arc::new(Texture::new("assets/sky.jpeg"));
+
+    for y in 0..framebuffer.height {
+        for x in 0..framebuffer.width {
+            let screen_x = (2.0 * x as f32) / width - 1.0;
+            let screen_y = -(2.0 * y as f32) / height + 1.0;
+            let screen_x = screen_x * aspect_ratio * perspective_scale;
+            let screen_y = screen_y * perspective_scale;
+            let ray_direction = Vec3::new(screen_x, screen_y, -1.0).normalize();
+            let rotated_direction = camera.basis_change(&ray_direction);
+            let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects, lights, &skybox_texture, 0);
+            framebuffer.set_current_color(pixel_color.to_hex());
+            framebuffer.point(x, y);
+        }
+    }
+}
+
+fn main() {
+    let window_width = 800;
+    let window_height = 600;
+
+    let framebuffer_width = 800;
+    let framebuffer_height = 600;
+
+    let frame_delay = Duration::from_millis(16);
+
+    let mut framebuffer = Framebuffer::new(framebuffer_width, framebuffer_height);
+
+    let mut window = Window::new(
+        "Diorama Minecraft",
+        window_width,
+        window_height,
+        WindowOptions::default(),
+    )
+    .expect("Failed to create window");
+
+    let skybox_texture = Arc::new(Texture::new("assets/sky.jpeg"));
+
+    let mut objects: Vec<Cube> = Vec::new();
+    
+    let stone_texture: Arc<Texture> = Arc::new(Texture::new("assets/stone_texture.png"));
+    let dirt_texture: Arc<Texture> = Arc::new(Texture::new("assets/wood_texture.png"));
+
+    let stone_material = Material::new_with_texture(
+        0.2,                      // specular
+        [0.8, 0.1, 0.0, 0.0],     // albedo
+        1.3,                      // refractive_index
+        stone_texture.clone(),     // texture
+        None,                      // emission_color (None en este caso)
+        0.0                        // emission_intensity
+    );
+    let dirt_material = Material::new_with_texture(
+        0.1,                      // specular
+        [0.9, 0.05, 0.0, 0.0],    // albedo
+        1.0,                      // refractive_index
+        dirt_texture.clone(),      // texture
+        None,                      // emission_color (None en este caso)
+        0.0                        // emission_intensity
+    );
+    // Construyendo una pequeña casa en el centro del escenario
+    for i in 0..2 {
+        for j in 0..2 {
+            objects.push(Cube {
+                min: Vec3::new(i as f32, 0.0, j as f32),
+                max: Vec3::new(i as f32 + 1.0, 1.0, j as f32 + 1.0),
+                material: stone_material.clone(),
+            });
+
+            objects.push(Cube {
+                min: Vec3::new(i as f32, -1.0, j as f32),
+                max: Vec3::new(i as f32 + 1.0, 0.0, j as f32 + 1.0),
+                material: dirt_material.clone(),
+            });
+        }
+    }
+
+    let mut camera = Camera::new(
+        Vec3::new(5.0, 5.0, 10.0), 
+        Vec3::new(0.0, 0.0, 0.0),   
+        Vec3::new(0.0, 1.0, 0.0),  
+    );
+
+    let lights = vec![Light::new(Vec3::new(-10.0, 10.0, 10.0), Color::new(255, 255, 255), 1.0)];
+
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        framebuffer.clear();
+        render(&mut framebuffer, &objects, &camera, &lights);
+        window
+            .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)
+            .unwrap();
+        std::thread::sleep(frame_delay);
+    }
 }

@@ -9,6 +9,10 @@ pub struct Light {
 
 impl Light {
     pub fn new(position: Vec3, color: Color, intensity: f32) -> Self {
-        Light { position, color, intensity }
+        Light {
+            position,
+            color,
+            intensity,
+        }
     }
 }
