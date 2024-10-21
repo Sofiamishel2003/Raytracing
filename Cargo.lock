@@ -10,6 +10,7 @@ dependencies = [
  "minifb",
  "nalgebra-glm",
  "once_cell",
+ "rand",
 ]
 
 [[package]]
